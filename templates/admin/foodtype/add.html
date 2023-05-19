@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>新增美食类型</title>
+    {% include 'admin/common/header.html' %}</head>
+</head>
+<body>
+<form class="layui-form" action="">
+    <div class="mainBox">
+        <div class="main-container">
+            <div class="main-container">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">父级</label>
+                    <div class="layui-input-block">
+                        <ul id="selectParent" name="parentId" class="dtree" data-id="-1"></ul>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">美食类型</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="foodTypeName" lay-verify="title" autocomplete="off" placeholder="美食类型名称"
+                               class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item" id="powerCodeItem">
+                    <label class="layui-form-label">备注</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="memo" name="memo" autocomplete="off" placeholder="备注"
+                               class="layui-input">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="bottom">
+        <div class="button-container">
+            <button type="submit" class="pear-btn pear-btn-primary pear-btn-sm" lay-submit="" lay-filter="foodtype-save">
+                <i class="layui-icon layui-icon-ok"></i>
+                提交
+            </button>
+            <button type="reset" class="pear-btn pear-btn-sm">
+                <i class="layui-icon layui-icon-refresh"></i>
+                重置
+            </button>
+        </div>
+    </div>
+</form>
+{% include 'admin/common/footer.html' %}
+<script>
+    layui.use(['form', 'jquery', 'iconPicker', 'dtree'], function () {
+        let form = layui.form
+        let $ = layui.jquery
+        let icon = layui.iconPicker
+        let dtree = layui.dtree
+
+        dtree.renderSelect({
+            elem: '#selectParent',
+            url: '/admin/foodtype/selectParent',
+            method: 'get',
+            selectInputName: {nodeId: 'parentId', context: 'foodTypeName'},
+            skin: 'layui',
+            dataFormat: 'list',
+            response: {treeId: 'foodTypeId', parentId: 'parentId', title: 'foodTypeName'},  //修改response中返回数据的定义
+            selectInitVal: '0'
+        })
+
+
+        form.on('submit(foodtype-save)', function (data) {
+            data.field.icon = 'layui-icon ' + data.field.icon
+            $.ajax({
+                url: '/admin/foodtype/save',
+                data: JSON.stringify(data.field),
+                dataType: 'json',
+                contentType: 'application/json',
+                type: 'post',
+                success: function (result) {
+                    if (result.success) {
+                        layer.msg(result.msg, {icon: 1, time: 1000}, function () {
+                            parent.layer.close(parent.layer.getFrameIndex(window.name))//关闭当前页
+                            parent.render()
+                        })
+                    } else {
+                        layer.msg(result.msg, {icon: 2, time: 1000})
+                    }
+                }
+            })
+            return false
+        })
+    })
+</script>
+<script>
+</script>
+</body>
+</html>

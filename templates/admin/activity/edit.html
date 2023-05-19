@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>活动编辑</title>
+    {% include 'admin/common/header.html' %}
+</head>
+<body>
+<form class="layui-form" action="">
+    <div class="mainBox">
+        <div class="main-container">
+            <div class="main-container">
+                <div class="layui-form-item layui-hide">
+                    <label class="layui-form-label">编号</label>
+                    <div class="layui-input-block">
+                        <input type="text" value="{{ activity.activityId }}" name="activityId" lay-verify="title"
+                               autocomplete="off" placeholder="请输入标题" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">活动标题</label>
+                    <div class="layui-input-block">
+                        <input type="text" value="{{ activity.title }}" name="title" lay-verify="title"
+                               autocomplete="off" placeholder="请输入标题" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">照片</label>
+                    <div class="layui-input-block">
+                        <img class="photo" style="max-width: 30%;height: 30%;cursor: pointer;" lay-event="photo" src="{{ activity.image }}">
+                        <button type="button" class="layui-btn layui-btn-normal" id="logo-img">选择文件</button>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">活动内容</label>
+                    <div class="layui-input-block">
+                        <input type="text" value="{{ activity.contents }}" name="contents" lay-verify="title"
+                               autocomplete="off" placeholder="请输入标题"
+                               class="layui-input">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="bottom">
+        <div class="button-container">
+            <button type="submit" class="pear-btn pear-btn-primary pear-btn-sm" lay-submit=""
+                    lay-filter="activity-update" id="saveButton">
+                <i class="layui-icon layui-icon-ok"></i>
+                提交
+            </button>
+            <button type="reset" class="pear-btn pear-btn-sm">
+                <i class="layui-icon layui-icon-refresh"></i>
+                重置
+            </button>
+        </div>
+    </div>
+</form>
+{% include 'admin/common/footer.html' %}
+<script>
+  layui.use(['form', 'jquery', 'dtree', 'upload'], function () {
+    let form = layui.form
+    let $ = layui.jquery
+    var upload = layui.upload
+
+    form.on('submit(activity-update)', function (data) {
+      let roleIds = ''
+      $('input[type=checkbox]:checked').each(function () {
+        roleIds += $(this).val() + ','
+      })
+      roleIds = roleIds.substr(0, roleIds.length - 1)
+      data.field.roleIds = roleIds
+      $.ajax({
+        url: '/admin/activity/update',
+        data: JSON.stringify(data.field),
+        dataType: 'json',
+        contentType: 'application/json',
+        type: 'put',
+        success: function (result) {
+          if (result.success) {
+            layer.msg(result.msg, { icon: 1, time: 1000 }, function () {
+              parent.layer.close(parent.layer.getFrameIndex(window.name))//关闭当前页
+              parent.layui.table.reload('activity-table')
+            })
+          } else {
+            layer.msg(result.msg, { icon: 2, time: 1000 })
+          }
+        }
+      })
+      return false
+    })
+
+      //选完文件后不自动上传
+        upload.render({
+            elem: '#logo-img'
+            , url: "{{ url_for('activity.upload_api') }}"
+            , auto: false
+            , exts: 'jpg|png|gif|bmp|jpeg'
+            , size: 1000
+            , bindAction: '#saveButton'
+            , choose: function(obj) {
+                //选择文件后，显示选择的文件的图片
+                var file = obj.pushFile(); //将图片文件对象放入队列
+                obj.preview(function(index, file, result){ //预览图片
+                    $('.photo').attr('src', result); //将图片的src属性设置为选择的文件的文件名
+                });
+            }
+
+        });
+
+
+  })
+</script>
+</body>
+</html>

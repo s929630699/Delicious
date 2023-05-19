@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>门店商家编辑</title>
+    {% include 'admin/common/header.html' %}
+</head>
+<body>
+<form class="layui-form" action="">
+    <div class="mainBox">
+        <div class="main-container">
+            <div class="main-container">
+                <div class="layui-form-item layui-hide">
+                    <label class="layui-form-label">编号</label>
+                    <div class="layui-input-block">
+                        <input type="text" value="{{ enterprise.enterpriseId }}" name="enterpriseId" lay-verify="title"
+                               autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">父级</label>
+                    <div class="layui-input-block">
+                        <ul id="selectParent" name="parentId" class="dtree" data-id="-1"></ul>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">门店名称</label>
+                    <div class="layui-input-block">
+                        <input type="text" value="{{ enterprise.enterpriseName }}" name="enterpriseName" lay-verify="title"
+                               autocomplete="off" placeholder="门店名称" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">地址</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="memo" value="{{ enterprise.address }}" name="address"
+                               autocomplete="off" placeholder="地址" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">联系电话</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="memo" value="{{ enterprise.telephone }}" name="telephone"
+                               autocomplete="off" placeholder="联系电话" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">评分</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="memo" value="{{ enterprise.score }}" name="score"
+                               autocomplete="off" placeholder="评分" class="layui-input">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="bottom">
+        <div class="button-container">
+            <button type="submit" class="pear-btn pear-btn-primary pear-btn-sm" lay-submit="" lay-filter="enterprise-save">
+                <i class="layui-icon layui-icon-ok"></i>
+                提交
+            </button>
+            <button type="reset" class="pear-btn pear-btn-sm">
+                <i class="layui-icon layui-icon-refresh"></i>
+                重置
+            </button>
+        </div>
+    </div>
+</form>
+{% include 'admin/common/footer.html' %}
+<script>
+    layui.use(['form', 'jquery', 'dtree'], function () {
+        let form = layui.form
+        let $ = layui.jquery
+        let dtree = layui.dtree
+
+        dtree.renderSelect({
+            elem: '#selectParent',
+            url: '/admin/enterprise/selectParent',
+            method: 'get',
+            selectInputName: {nodeId: 'parentId'},
+            skin: 'layui',
+            dataFormat: 'list',
+            response: {treeId: 'enterpriseId', parentId: 'parentId', title: 'enterpriseName'},
+            selectInitVal: "{{ enterprise.parentId }}"
+        })
+
+        form.on('submit(enterprise-save)', function (data) {
+            data.field.icon = 'layui-icon ' + data.field.icon
+            $.ajax({
+                url: '/admin/enterprise/update',
+                data: JSON.stringify(data.field),
+                dataType: 'json',
+                contentType: 'application/json',
+                type: 'put',
+                success: function (result) {
+                    if (result.success) {
+                        layer.msg(result.msg, {icon: 1, time: 1000}, function () {
+                            parent.layer.close(parent.layer.getFrameIndex(window.name))//关闭当前页
+                            parent.render()
+                        })
+                    } else {
+                        layer.msg(result.msg, {icon: 2, time: 1000})
+                    }
+                }
+            })
+            return false
+        })
+    })
+</script>
+<script>
+</script>
+</body>
+</html>

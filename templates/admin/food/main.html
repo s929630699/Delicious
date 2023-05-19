@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>美食套餐管理</title>
+    {% include 'admin/common/header.html' %}</head>
+<body class="pear-container">
+<div class="layui-card">
+    <div class="layui-card-body">
+        <form class="layui-form" action="">
+            <div class="layui-form-item">
+                <label class="layui-form-label">美食名称</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="foodName" placeholder="" class="layui-input">
+                </div>
+                <label class="layui-form-label">美食类别</label>
+                <div class="layui-input-inline">
+                    <ul id="selectFoodType" name="foodType" class="dtree" data-id="0"></ul>
+                </div>
+                <label class="layui-form-label">所属商家</label>
+                <div class="layui-input-inline">
+                    <ul id="selectEnterprise" name="enterpriseId" class="dtree" data-id="0"></ul>
+                </div>
+
+                <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="food-query">
+                    <i class="layui-icon layui-icon-search"></i>
+                    查询
+                </button>
+                <button type="reset" class="pear-btn pear-btn-md" lay-submit lay-filter="food-reset">
+                    <i class="layui-icon layui-icon-refresh"></i>
+                    重置
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="layui-card">
+    <div class="layui-card-body">
+        <table id="food-table" lay-filter="food-table"></table>
+    </div>
+</div>
+</body>
+
+<script type="text/html" id="food-toolbar">
+    {% if authorize("admin:food:add") %}
+        <button class="pear-btn pear-btn-primary pear-btn-md" lay-event="add">
+            <i class="layui-icon layui-icon-add-1"></i>
+            新增
+        </button>
+    {% endif %}
+    {% if authorize("admin:food:remove") %}
+        <button class="pear-btn pear-btn-md" lay-event="batchRemove">
+            <i class="layui-icon layui-icon-delete"></i>
+            删除
+        </button>
+    {% endif %}
+</script>
+
+<script type="text/html" id="food-bar">
+    {% if authorize("admin:food:edit") %}
+        <button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit"><i
+                class="layui-icon layui-icon-edit"></i>
+        </button>
+    {% endif %}
+    {% if authorize("admin:food:remove") %}
+        <button class="pear-btn pear-btn-danger pear-btn-sm" lay-event="remove"><i
+                class="layui-icon layui-icon-delete"></i>
+        </button>
+    {% endif %}
+</script>
+
+{% include 'admin/common/footer.html' %}
+
+<script>
+  layui.use(['table', 'form', 'jquery', 'popup', 'common', 'dtree'], function () {
+    let table = layui.table
+    let form = layui.form
+    let $ = layui.jquery
+    let popup = layui.popup
+    let dtree = layui.dtree
+
+
+    let MODULE_PATH = '/admin/food/'
+
+    {#渲染搜索下拉树#}
+    var foodTypeDtree=dtree.renderSelect({
+          elem: '#selectFoodType',
+          url: '/admin/foodtype/selectFoodType',
+          method: 'get',
+          selectInputName: { nodeId: 'foodType' },
+          skin: 'layui',
+          dataFormat: 'list',
+          response: { treeId: 'foodTypeId', parentId: 'parentId', title: 'foodTypeName' }
+        })
+    var enterpriseDtree=dtree.renderSelect({
+          elem: '#selectEnterprise',
+          url: '/admin/enterprise/selectEnterprise',
+          method: 'get',
+          selectInputName: { nodeId: 'enterpriseId' },
+          skin: 'layui',
+          dataFormat: 'list',
+          response: { treeId: 'enterpriseId', parentId: 'parentId', title: 'enterpriseName' }
+        })
+
+
+    {#渲染列表#}
+    let cols = [
+      [
+        {% if authorize("admin:food:remove") %}
+          { type: 'checkbox' },
+        {% endif %}
+        { title: '美食名称', field: 'foodName', align: 'center' },
+        { title: '美食海报', field: 'foodImage', align: 'center',
+        templet: function (d) {
+            return '<img class="photo" style="max-width: 100%;\n' +
+              '  height: 100%;\n' +
+              '  cursor: pointer;" lay-event="photo" src=" ' + d.foodImage + '"></i>'
+          }},
+        { title: '美食类型', field: 'foodTypeName', align: 'center'},
+        { title: '价格', field: 'price', align: 'center' },
+        { title: '上架日期', field: 'launchDate', align: 'center' },
+        { title: '销售数量', field: 'saleCount', align: 'center'},
+        { title: '点击数', field: 'hits', align: 'center'},
+        { title: '收藏量', field: 'collectQuantity', align: 'center'},
+        { title: '所属商家', field: 'enterpriseName', align: 'center' },
+        { title: '操作', toolbar: '#food-bar', align: 'center', width: 130 }
+      ]
+    ]
+
+    {#表数据#}
+    table.render({
+      elem: '#food-table',
+      url: MODULE_PATH + 'data',
+      page: true,
+      cols: cols,
+      skin: 'line',
+      toolbar: '#food-toolbar',
+      defaultToolbar: [{
+        layEvent: 'refresh',
+        icon: 'layui-icon-refresh',
+      }, 'filter', 'print', 'exports']
+    })
+
+    {#右方工具栏#}
+    table.on('tool(food-table)', function (obj) {
+      if (obj.event === 'remove') {
+        window.remove(obj)
+      } else if (obj.event === 'edit') {
+        window.edit(obj)
+      }
+    })
+
+    {#上方工具栏#}
+    table.on('toolbar(food-table)', function (obj) {
+      if (obj.event === 'add') {
+        window.add()
+      } else if (obj.event === 'refresh') {
+        window.refresh()
+      } else if (obj.event === 'batchRemove') {
+        window.batchRemove(obj)
+      }
+    })
+
+    {#根据条件查询#}
+    form.on('submit(food-query)', function (data) {
+      table.reload('food-table', { where: data.field })
+      return false
+    })
+
+    {#重置按钮操作#}
+    form.on('submit(food-reset)', function () {
+      {#重置下拉树#}
+      foodTypeDtree.reload()
+      enterpriseDtree.reload()
+      return false
+    })
+
+    {#新增按钮操作#}
+    window.add = function () {
+      layer.open({
+        type: 2,
+        title: '新增',
+        shade: 0.1,
+        area: ['500px', '500px'],
+        content: MODULE_PATH + 'add'
+      })
+    }
+
+    {#修改按钮操作#}
+    window.edit = function (obj) {
+      layer.open({
+        type: 2,
+        title: '修改',
+        shade: 0.1,
+        area: ['500px', '500px'],
+        content: MODULE_PATH + 'edit/' + obj.data['foodId']
+      })
+    }
+
+    {#删除按钮操作#}
+    window.remove = function (obj) {
+      layer.confirm('确定要删除该角色', { icon: 3, title: '提示' }, function (index) {
+        layer.close(index)
+        let loading = layer.load()
+        $.ajax({
+          url: MODULE_PATH + 'remove/' + obj.data['foodId'],
+          dataType: 'json',
+          type: 'delete',
+          success: function (result) {
+            layer.close(loading)
+            if (result.success) {
+              layer.msg(result.msg, { icon: 1, time: 1000 }, function () {
+                obj.del()
+              })
+            } else {
+              layer.msg(result.msg, { icon: 2, time: 1000 })
+            }
+          }
+        })
+      })
+    }
+
+    {#批量删除操作#}
+    window.batchRemove = function (obj) {
+      let data = table.checkStatus(obj.config.id).data
+      if (data.length === 0) {
+        layer.msg('未选中数据', {
+          icon: 3,
+          time: 1000
+        })
+        return false
+      }
+      var ids = []
+      var hasCheck = table.checkStatus('food-table')
+      var hasCheckData = hasCheck.data
+      if (hasCheckData.length > 0) {
+        $.each(hasCheckData, function (index, element) {
+          ids.push(element.foodId)
+        })
+      }
+      console.log(ids)
+      layer.confirm('确定要删除选中角色', {
+        icon: 3,
+        title: '提示'
+      }, function (index) {
+        layer.close(index)
+        let loading = layer.load()
+        $.ajax({
+
+          url: MODULE_PATH + 'batchRemove',
+          data: { ids: ids },
+          dataType: 'json',
+          type: 'delete',
+          success: function (result) {
+            layer.close(loading)
+            if (result.success) {
+              popup.success(result.msg, function () {
+                table.reload('food-table')
+              })
+            } else {
+              popup.failure(result.msg)
+            }
+          }
+        })
+      })
+    }
+
+    {#刷新#}
+    window.refresh = function () {
+      table.reload('food-table')
+    }
+
+
+
+  })
+</script>
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>门店商家管理</title>
+    {% include 'admin/common/header.html' %}
+</head>
+<body class="pear-container">
+<div class="layui-card">
+    <div class="layui-card-body">
+        <form class="layui-form" action="">
+            <div class="layui-form-item">
+                <label class="layui-form-label">门店商家</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="enterpriseName" placeholder="" class="layui-input">
+                </div>
+                <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="enterprise-query">
+                    <i class="layui-icon layui-icon-search"></i>
+                    查询
+                </button>
+                <button type="reset" class="pear-btn pear-btn-md">
+                    <i class="layui-icon layui-icon-refresh"></i>
+                    重置
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="layui-card">
+    <div class="layui-card-body">
+        <table id="enterprise-table" lay-filter="enterprise-table"></table>
+    </div>
+</div>
+
+<script type="text/html" id="enterprise-toolbar">
+    {% if authorize("admin:enterprise:add") %}
+        <button class="pear-btn pear-btn-primary pear-btn-md" lay-event="add">
+            <i class="layui-icon layui-icon-add-1"></i>
+            新增
+        </button>
+    {% endif %}
+    {% if authorize("admin:enterprise:remove") %}
+        <button class="pear-btn pear-btn-md" lay-event="batchRemove">
+            <i class="layui-icon layui-icon-delete"></i>
+            删除
+        </button>
+    {% endif %}
+</script>
+
+<script type="text/html" id="enterprise-bar">
+    {% if authorize("admin:enterprise:edit") %}
+        <button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit"><i
+                class="layui-icon layui-icon-edit"></i>
+        </button>
+    {% endif %}
+    {% if authorize("admin:enterprise:remove") %}
+        <button class="pear-btn pear-btn-danger pear-btn-sm" lay-event="remove"><i
+                class="layui-icon layui-icon-delete"></i>
+        </button>
+    {% endif %}
+</script>
+
+</body>
+
+{% include 'admin/common/footer.html' %}
+
+<script>
+  layui.use(['table', 'form', 'jquery', 'treetable', 'popup'], function () {
+    let table = layui.table
+    let form = layui.form
+    let $ = layui.jquery
+    let treetable = layui.treetable
+    let popup = layui.popup
+
+    let MODULE_PATH = '/admin/enterprise/'
+
+    window.render = function () {
+      treetable.render({
+        treeColIndex: 1,
+        treeSpid: 0,
+        treeIdName: 'enterpriseId',
+        treePidName: 'parentId',
+        skin: 'line',
+        method: 'post',
+        treeDefaultClose: true,
+        toolbar: '#enterprise-toolbar',
+        elem: '#enterprise-table',
+        url: '/admin/enterprise/data',
+        page: false,
+        cols: [
+          [
+            {% if authorize("admin:enterprise:remove") %}
+                { type: 'checkbox' },
+            {% endif %}
+            { field: 'enterpriseName', minWidth: 200, title: '门店商家' },
+            { field: 'address', title: '商家地址' },
+            { field: 'telephone', title: '联系电话' },
+            { field: 'score', title: '评分' },
+            { title: '操作', templet: '#enterprise-bar', width: 120, align: 'center' }
+          ]
+        ]
+      })
+    }
+
+    form.on('submit(enterprise-query)', function (data) {
+      var keyword = data.field.enterpriseName
+      var $tds = $('#enterprise-table').next('.treeTable').find('.layui-table-body tbody tr td')
+      if (!keyword) {
+        $tds.css('background-color', 'transparent')
+        layer.msg('请输入关键字', { icon: 5 })
+        return
+      }
+      var searchCount = 0
+      $tds.each(function () {
+        $(this).css('background-color', 'transparent')
+        if ($(this).text().indexOf(keyword) >= 0) {
+          $(this).css('background-color', 'rgba(250,230,160,0.5)')
+          if (searchCount === 0) {
+            $('body,html').stop(true)
+            $('body,html').animate({ scrollTop: $(this).offset().top - 150 }, 500)
+          }
+          searchCount++
+        }
+      })
+      if (searchCount === 0) {
+        layer.msg('没有匹配结果', { icon: 5 })
+      } else {
+        treetable.expandAll('#enterprise-table')
+      }
+      return false
+    })
+
+    render()
+
+    table.on('tool(enterprise-table)', function (obj) {
+      if (obj.event === 'remove') {
+        window.remove(obj)
+      } else if (obj.event === 'edit') {
+        window.edit(obj)
+      }
+    })
+
+    table.on('toolbar(enterprise-table)', function (obj) {
+      if (obj.event === 'add') {
+        window.add()
+      } else if (obj.event === 'refresh') {
+        window.refresh()
+      } else if (obj.event === 'batchRemove') {
+        window.batchRemove(obj)
+      }
+    })
+
+    window.add = function () {
+      layer.open({
+        type: 2,
+        title: '新增',
+        shade: 0.1,
+        area: ['450px', '500px'],
+        content: MODULE_PATH + 'add'
+      })
+    }
+
+    window.edit = function (obj) {
+      layer.open({
+        type: 2,
+        title: '修改',
+        shade: 0.1,
+        area: ['450px', '500px'],
+        content: MODULE_PATH + 'edit?enterpriseId=' + obj.data['enterpriseId']
+      })
+    }
+
+    window.remove = function (obj) {
+      layer.confirm('确定要删除该门店商家', { icon: 3, title: '提示' }, function (index) {
+        layer.close(index)
+        let loading = layer.load()
+        $.ajax({
+          url: MODULE_PATH + 'remove/' + obj.data['enterpriseId'],
+          dataType: 'json',
+          type: 'delete',
+          success: function (result) {
+            layer.close(loading)
+            if (result.success) {
+              popup.success(result.msg, function () {
+                obj.del()
+              })
+            } else {
+              popup.failure(result.msg)
+            }
+          }
+        })
+      })
+    }
+
+    {#批量删除操作#}
+    window.batchRemove = function (obj) {
+      let data = table.checkStatus(obj.config.id).data
+      if (data.length === 0) {
+        layer.msg('未选中数据', {
+          icon: 3,
+          time: 1000
+        })
+        return false
+      }
+      var ids = []
+      var hasCheck = table.checkStatus('enterprise-table')
+      var hasCheckData = hasCheck.data
+      if (hasCheckData.length > 0) {
+        $.each(hasCheckData, function (index, element) {
+          ids.push(element.enterpriseId)
+        })
+      }
+      console.log(ids)
+      layer.confirm('确定要删除选中门店商家', {
+        icon: 3,
+        title: '提示'
+      }, function (index) {
+        layer.close(index)
+        let loading = layer.load()
+        $.ajax({
+
+          url: MODULE_PATH + 'batchRemove',
+          data: { ids: ids },
+          dataType: 'json',
+          type: 'delete',
+          success: function (result) {
+            layer.close(loading)
+            if (result.success) {
+              popup.success(result.msg, function () {
+                render()
+              })
+            } else {
+              popup.failure(result.msg)
+            }
+          }
+        })
+      })
+    }
+  })
+</script>
+</html>
